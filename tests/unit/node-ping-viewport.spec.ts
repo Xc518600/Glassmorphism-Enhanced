@@ -119,7 +119,7 @@ async function createRuntime(kind: 'card' | 'list', supported: boolean) {
       },
       load(id) {
         if (id === `\0${virtual}observer`)
-          return 'export const useIntersectionObserver = (...args) => globalThis.__nodeViewportTest.observe(...args);'
+          return 'import { ref } from "vue"; export const useTimestamp = () => ref(Date.now()); export const useIntersectionObserver = (...args) => globalThis.__nodeViewportTest.observe(...args);'
         if (id === `\0${virtual}ping`) {
           return `export function useNodeCarrierPingSource(node, enabled) { globalThis.__nodeViewportTest.bind(() => node().uuid, enabled); return { carrierDisplays: [], isTransit: false }; }
 export function useNodePingDisplay(uuid, options) { globalThis.__nodeViewportTest.bind(uuid, options.enabled); return { latencyRenderBars: [], lossRenderBars: [] }; }`

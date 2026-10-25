@@ -793,3 +793,82 @@
 - Implemented 7 deterministic Playwright baselines: light desktop home, dark mobile home, accessible desktop list, Cobe and tiled earth layouts, light desktop detail and dark mobile detail. All use mocked Komari API/RPC/visitor data, fixed time, disabled animations and hidden dynamic 3D canvas pixels while retaining globe layout boundaries.
 - First baseline generation and repeated comparison both passed 7/7 with system Chrome. Windows system-channel Chrome did not exit cleanly after reporting results, so release validation does not treat that local channel teardown as a product failure; CI installs and runs Playwright's managed Chromium.
 - Added the independent `Visual Regression` workflow for pull requests and `main`, with actual/diff/HTML report artifacts retained for 14 days on failure. Release target is v3.3.0.
+
+## Route accuracy repair (M5/M6, local review only)
+
+- Scope: correct ASN mapping, structured hop/attempt evidence, bounded safe collector, conservative classification, per-carrier cache fallback and serialized persistence; preserve original UI.
+- No deployment, remote commands, installs, commits or pushes. Validation pending.
+
+### Route accuracy repair — ready for local review (2026-10-25)
+
+- Implemented schema v2 ordered hops/attempts, corrected mobile ASN, conservative multi-hop/mixed classification, marked IPv4 prefix fallback, bounded ICMP+UDP/plain fallback and separate opt-in install.
+- Added route composable; per-carrier successful evidence survives failed attempts; old v1 caches require refresh; stale mounted cards refresh. Shared service save queue merges node deltas with latest public settings; cross-browser CAS remains unavailable.
+- Card template/CSS remains unchanged; tooltip now carries actual per-hop evidence, method/exit/reachability and freshness. Minimal existing source lint cleanup included in NodeCard and app import ordering.
+- Version 1.1.2; README documents scope, targets, dependencies, conservative semantics, timeout/install bounds and concurrency limitations; CHANGELOG updated.
+- Validation: route suite 27/27; existing request-manager suite 67/67 after fixing optional mock-store lifecycle guard; source type-check + Vite build passed; repository ESLint and diff whitespace checked. Shell syntax validated for probe and install; collector executed solely with local mocks, no real traceroute/install/task.
+- Browser visual test not run: Playwright Chromium executable is absent (`/root/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome`); no software installation authorized. Template/styles unchanged. Build retains existing >600kB globe chunk warning.
+- ZIP expected `komari-theme-Glassmorphism-build-3a4a96d.zip`; root manifest/preview/dist contract, preview bytes, CRC, manifest identity/version and compiled markers verified. Final digest returned with handoff.
+- No commit/push/deployment/login/node tasks. Real Komari/BusyBox timeout variants and actual node output are not live-verified. Fixed IPv4 targets/prefix heuristics do not prove countrywide routes, GIA, symmetry or service quality. Same-browser saves serialize; external writers still need backend CAS. Ready for parent independent review only.
+
+## 1.1.3 ordered route display — local review (2026-10-25)
+
+- Added ordered route summaries with separate `经过` and `落地` fields. The card uses one-way `→`, original glass tokens and carrier dots; no quality tier is attached to route evidence.
+- Complete methods are preferred over incomplete ones; source conflicts, method differences, re-entry, unknown tails and destination-only evidence remain in tooltip notes. Landing means last observed backbone/domestic delivery network, not a guessed destination ASN; old v1 data remains stale.
+- Added authorized single-node VMISS fixture at `tests/fixtures/route-vmiss9929.json` from public cache timestamp 2026-10-25 23:23:37, containing only the requested node's route data. Regression examples expect telecom `9929 → 163`, Unicom `9929 → 4837`, mobile `CMIN2 → CMNET` (mobile final AS56048 is retained in hop evidence).
+- Manifest bumped to 1.1.3; README and CHANGELOG updated. No commit, push, deploy, node command, or install performed.
+- Validation: route suite 41/41; isolated history fallback 5/5; full request suite 66/67 on first run due one 30s flaky pool-slot test, then isolated failed case 5/5. Type-check passed; build passed and created `komari-theme-Glassmorphism-build-3a4a96d.zip`; ZIP root/CRC/manifest/dist checks passed. ESLint and `git diff --check` were run. Playwright browser visual verification remains unavailable (Chromium not installed).
+- Final full request-suite rerun passed **67/67** (6.0s); route suite **41/41**. Exact new archive (not older `unknown` archive): `komari-theme-Glassmorphism-build-3a4a96d.zip`, SHA-256 `ebfbe3ffd56e36a1f217110fbd20b7a860610e3f314240fd6cce271f2230af38`. Exact ZIP manifest `Glassmorphism Enhanced` / `Enhanced` / `1.1.3`, preview bytes, CRC, root contract and compiled passage/landing markers all verified. Earlier broad glob selected the older 1.1.1 archive; corrected by exact filename, not a build fault.
+
+- User terminology clarification applied after first review handoff: headers are now `出发线路` / `落地线路`; tooltip explicitly defines observed front backbone vs domestic delivery, not machine access provider or bidirectionality. Evidence classifier and VMISS results unchanged. Rebuilding archive supersedes previous digest.
+- Clarified-header rebuild verified: route 41/41, type-check/build, no-fix ESLint and diff-check passed; exact ZIP CRC/root/manifest/compiled headers passed. Updated SHA-256 `32df568bf824bb0d9c3f5d996a8c69f53ac7ef57be7897aa5ddcf968d845aff4` supersedes the earlier digest; package path unchanged.
+
+## 1.1.4 dotted route reference tiers — in progress (M4/M5/M6)
+
+- Preserve all 1.1.3 evidence/classification/collector/save changes. Add pure presentation-tier helper and five-column static dotted UI, then test matrix/cache/layout, validate build/lint/archive. No remote actions or release.
+
+### 1.1.4 implementation and verification (2026-10-26)
+
+- Added `src/utils/routeTier.ts`, pure presentation-only rating of existing ordered evidence. Original 1.1.3 route parser, collection and persistence untouched in this iteration. Five 3px static real dots inherit neutral/blue/green grade color; final grade text remains readable without color. Both row/header share bounded five-column grid, `minmax(0,1fr)` and truncated path names; original glass and font/carrier-dot tokens preserved.
+- Conservative gates: any stale/expired/legacy/error/source conflict/re-entry/contradictory front or complete landing is unrated. Ordinary front is 普通; CN2/9929/CMIN2 front is 优秀; same premium front/landing requires every method complete, all query-ASN hops and no unknown/timeout for 精品. Incomplete same-front method does not contradict complete landing, but blocks 精品. One-second display-only clock withdraws expired grades without issuing a probe. No Ping inputs.
+- VMISS saved six-attempt fixture replay in its original valid interval: telecom 9929–163 优秀, Unicom 9929–4837 优秀, mobile CMIN2–CMNET 优秀; after expiry all grades `--` with gray dots, while original paths remain. This is saved-evidence replay, not a fresh server traceroute.
+- Tests: route suite extended from 41 to 66; request-manager regression 67/67 passed. Type-check/build and final no-fix ESLint/diff-check rerun for final clock change; final outcome recorded in child handoff.
+- Browser rendering/screenshot unavailable: installed Playwright Chromium expected executable is absent; no system Chrome/Chromium found. Static source structure/layout tests do not establish computed browser layout. No browser/software installed, system change, login, real node task, deployment, commit or push. Release verification is out of scope because nothing was published.
+
+Final validation: route 66/66; request-manager 67/67; type-check/build; no-fix ESLint and diff-check passed. Exact archive CRC/root/manifest 1.1.4/preview/compiled dot-tier markers passed; retained existing globe large-chunk warning. Ready for parent independent review.
+
+## 1.1.5 flexible route rail — M4/M6 local review (2026-10-26)
+
+- Scope: presentation only, preserve all cumulative uncommitted changes. Replace five dots with CSS radial-gradient 3px circles / 7px repeat-x pitch and currentColor, no animation.
+- One shared four-column parent grid aligns headers and all landings. Each intrinsic nonshrinking departure and flex rail occupy one cell; rail margin-inline 2ch is the only departure/landing spacing, with no duplicate column gap. Narrow widths shorten the rail, not the text; unknown `--` uses identical markup.
+- No classifier/tier/collector/save code modified. Updated manifest/README/CHANGELOG and structural regression assertions. Validation pending; no commit/push/deploy or software installation authorized.
+
+### 1.1.5 validation and handoff
+
+- Route tests: first run 65/66 because the no-truncation assertion accidentally included the separate existing error-message truncation; narrowed assertion to route rows, rerun 66/66 passed. Type-check, production build, full no-fix ESLint and diff-check passed; existing globe large-chunk notice only.
+- Request-manager first run 65/67: viewport harness fully aliases VueUse but lacked existing 1.1.4 useTimestamp. Added a stable ref timestamp export only in the harness (no app behavior changes); rerun result to be recorded below.
+- No system Chromium/Chrome or installed Playwright Chromium executable: browser geometry and screenshots not verified; no browser/software installed. CSS/markup checks establish intended structure, not rendered narrow-screen acceptance.
+- Freeze process: final existing Vite ZIP validated for CRC/root/manifest 1.1.5/dist/preview/compiled rail markers, then copied once to version-unique attachment; source/copy SHA-256 equality required. Exact hash returned in parent handoff rather than self-referential archive metadata. No commit, push, deployment, node tasks or external writes performed.
+
+- Final request-manager rerun **67/67 passed (6.1s)**; full no-fix ESLint/diff-check rerun passed. Route **66/66 passed**. All task edits complete before artifact verification/freeze. No live visual or activation claims.
+
+## 1.1.6 fixed centered dots — M4/M6 (2026-10-26)
+
+- Latest parent-relayed screenshot clarification overrides 20 with **18** fixed dots and removes only the visible 等级 header. Row tiers/colors/tooltips retained.
+- Replace superseded 1.1.5 repeat rail: independent flexible grid column, shared by all carriers and header; 18 keyed spans, nowrap centered group, 3px dots / 3px gaps, container-relative shrinking with 4px side breathing room. Route text remains intrinsic/nowrap.
+- Preserve cumulative uncommitted 1.1.5 changes; no classifier/tiers/collector/storage changes, installs, commit/push/deploy or live probes. Validation completed below.
+
+- Validation: route **66/66** and request-manager **67/67** passed; type-check and production build passed (existing globe chunk-size warning). Initial no-fix ESLint found one extra blank line in this log, corrected before final rerun. Browser executable absent; no screenshot/computed narrow-screen geometry verification and no software installed. Source-level layout assertions are not live visual acceptance.
+- Final CRC/root/manifest 1.1.6/preview/dist and compiled 18-span marker verification required before freezing the delivery copy; source/copy hashes returned to parent. This local package is not published or activated.
+
+- Latest color clarification: ordinary dots yellow, excellent blue, boutique green, unknown/expired red (latest clarification supersedes gray; not a poor-line verdict). Added presentation-only ROUTE_DOT_COLORS map, leaving existing tier text colors and getRouteTier logic unchanged. Earlier frozen candidate superseded; final rebuild and archive/hash verification follow this clarification.
+
+- Final post-clarification rerun: route 66/66, type-check, production build, no-fix ESLint, diff-check passed. Request-manager 67/67 passed earlier in this task; follow-up changes only dot-color constants. Final archive CRC/root/manifest/preview/dist/compiled 18 + yellow/red markers verified and delivery hash matches source; superseded pre-color candidate preserved separately. Final package frozen; no further rebuild.
+
+## 1.1.7 carrier-to-departure spacing — M4/M6 (2026-10-26)
+
+- Only widen the gap between carrier names and departure labels using a shared intrinsic carrier column and explicit 2ch end padding. Preserve fixed18 centered dots, landing/tier alignment, colors and all accumulated uncommitted work.
+- No classification, tier rules, collection or storage changes; no install, live probe, commit/push/deployment. Validation pending.
+
+- Completed: route专项 **67/67**, request regression **67/67**, npm type-check/build, full-project no-fix ESLint and diff-check passed. Existing globe >600kB chunk warning retained. Used installed Node/NPM runners without dependencies or system changes.
+- Carrier column changed from fixed32px to max-content, adding explicit padding-inline-end:2ch on carrier cells. Departure values/header align in their existing shared intrinsic column; centered18 dot column may use the remaining flexible width, all colors unchanged. Browser absent (Playwright executable and system Chrome/Chromium unavailable); no screenshot or computed narrow-screen geometry acceptance claimed.
+- Final archive must pass CRC/root/version1.1.7/preview/dist bytes and compiled spacing18/color marker checks before copying to version-unique workspace attachment; hash equality returned in handoff. No commit, push, deploy or live node execution. Source/docs edits complete before freezing the attachment; no later rebuild intended.

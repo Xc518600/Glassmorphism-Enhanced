@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import type { NodeData } from '@/stores/nodes'
+import type { RouteCarrier } from '@/utils/routeProbe'
 import { Icon } from '@iconify/vue'
-import { useIntersectionObserver } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { useIntersectionObserver, useTimestamp } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { CardX } from '@/components/ui/card-x'
 import { DataTooltip } from '@/components/ui/data-tooltip'
-import { ProgressThin } from '@/components/ui/progress-thin'
 
+import { ProgressThin } from '@/components/ui/progress-thin'
 import { useNodeCarrierPingSource } from '@/composables/useNodeCarrierPingSource'
+import { useNodeRouteProbe } from '@/composables/useNodeRouteProbe'
 import { useAppStore } from '@/stores/app'
-import { executeRouteProbe, saveRouteProbeResults } from '@/services/routeProbe.service'
-import { getRouteProfile, getRouteQuality } from '@/utils/routeProbe'
-import type { RouteCarrier, RouteProbeResult } from '@/utils/routeProbe'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, getStatus, getUptimeDays } from '@/utils/helper'
 import { getDiskPercentage, getMemoryPercentage, getTrafficUsed, getTrafficUsedPercentage, hasTrafficLimit } from '@/utils/nodeMetricsHelper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
+import { getRouteTier, ROUTE_DOT_COLORS, ROUTE_TIER_COLORS, ROUTE_TIER_NOTICE } from '@/utils/routeTier'
 import { formatCurrencyValue, formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, getRemainingValue, isFreePrice, parseTags } from '@/utils/tagHelper'
 
 const props = withDefaults(defineProps<{
@@ -100,9 +100,10 @@ const { carrierDisplays, isTransit } = useNodeCarrierPingSource(
   () => props.pingEnabled && (!isSupported.value || pingVisible.value),
 )
 
+const NUMERIC_DISPLAY_RE = /[^\d.]/g
 function carrierQuality(carrier: typeof carrierDisplays.value[number]): { label: string, className: string } {
-  const latency = Number.parseFloat(carrier.latencyDisplay.replace(/[^\d.]/g, ''))
-  const loss = Number.parseFloat(carrier.lossDisplay.replace(/[^\d.]/g, ''))
+  const latency = Number.parseFloat(carrier.latencyDisplay.replace(NUMERIC_DISPLAY_RE, ''))
+  const loss = Number.parseFloat(carrier.lossDisplay.replace(NUMERIC_DISPLAY_RE, ''))
   if (!Number.isFinite(latency) || !Number.isFinite(loss))
     return { label: '暂无数据', className: 'text-muted-foreground' }
   if (loss <= 1 && latency <= 80)
@@ -119,7 +120,7 @@ const trafficUsedPercentage = computed(() => getTrafficUsedPercentage(props.node
 // IPv4/IPv6 is optional in Komari's public node payload. Never invent a line
 // when the agent did not report an address; the card falls back to a dash.
 const selectedIpFamily = ref<'ipv4' | 'ipv6'>('ipv4')
-const hasBothIpFamilies = computed(() => Boolean(props.node.ipv4?.trim() && props.node.ipv6?.trim()))
+const _hasBothIpFamilies = computed(() => Boolean(props.node.ipv4?.trim() && props.node.ipv6?.trim()))
 const availableIpFamily = computed(() => {
   if (selectedIpFamily.value === 'ipv4' && !props.node.ipv4?.trim() && props.node.ipv6?.trim())
     return 'ipv6'
@@ -127,12 +128,8 @@ const availableIpFamily = computed(() => {
     return 'ipv4'
   return selectedIpFamily.value
 })
-const activeIp = computed(() => availableIpFamily.value === 'ipv4' ? props.node.ipv4 : props.node.ipv6)
-const routeProbe = computed(() => appStore.routeProbeResults[props.node.uuid] as RouteProbeResult | undefined)
-const routeProbeBusy = ref(false)
-const routeProbeStarted = ref(false)
-let routeProbeTimer: ReturnType<typeof setInterval> | undefined
-const routeProbeError = ref('')
+const _activeIp = computed(() => availableIpFamily.value === 'ipv4' ? props.node.ipv4 : props.node.ipv6)
+const { routeProbe, routeProbeError } = useNodeRouteProbe(() => props.node.uuid)
 const routeProbeCarriers: Array<{ key: RouteCarrier, label: string }> = [
   { key: 'telecom', label: '电信' },
   { key: 'unicom', label: '联通' },
@@ -143,86 +140,20 @@ const routeCarrierDotClass: Record<RouteCarrier, string> = {
   unicom: 'bg-rose-500',
   mobile: 'bg-emerald-500',
 }
-const routeProfileText = (carrier: RouteCarrier) => {
+const routeTierNow = useTimestamp({ interval: 1000 })
+function routeTier(carrier: RouteCarrier) {
+  return getRouteTier(carrier, routeProbe.value?.carriers[carrier], appStore.routeProbeIntervalMinutes * 60_000, routeTierNow.value)
+}
+function routeProfileTitle(carrier: RouteCarrier) {
   const result = routeProbe.value?.carriers[carrier]
   if (!result)
-    return ''
-  const profile = getRouteProfile(carrier, result.asns)
-  return profile === '未识别' ? '' : profile
+    return `暂无路由证据\n${ROUTE_TIER_NOTICE}`
+  const success = result.lastSuccess ? new Date(result.lastSuccess).toLocaleString() : '暂无'
+  const attempt = new Date(result.lastAttempt).toLocaleString()
+  const aged = result.lastSuccess && Date.now() - result.lastSuccess > appStore.routeProbeIntervalMinutes * 60_000
+  const evidence = [...result.attempts, ...(result.latestAttempts || [])].map(a => `${a.method} → ${a.target} / exit=${a.exitCode ?? '未知'} / ${a.reached ? '已到达' : '未确认到达'}\n${a.hops.map(h => `${h.distance}: ${h.ips.join(', ') || '*'} [${h.asns.map(n => `AS${n}`).join(', ') || 'ASN未知'}; ${h.source}]${h.timeout ? ' *' : ''}`).join('\n')}`).join('\n')
+  return `${ROUTE_TIER_NOTICE}；当前参考：${routeTier(carrier)}\n${result.notes.join('；')}\n已识别 ASN 证据：${result.route}\n上次有效：${success}\n最近尝试：${attempt}\n${result.stale || aged ? '旧结果／待刷新；' : ''}${result.error || ''}\n出发线路为观测到的前段骨干，不是机器接入商；落地线路为国内最后识别骨干／交付网，实际末端接入 ASN 见下方逐跳证据\n服务器 → 指定国内目标；不代表双向或全国线路\n${evidence}`
 }
-
-const routeProfileTitle = (carrier: RouteCarrier) => {
-  const result = routeProbe.value?.carriers[carrier]
-  return result?.route && result.route !== '—' ? `完整路径：${result.route}` : '暂无完整路径'
-}
-
-function routeQuality(carrier: RouteCarrier): { label: string, className: string } {
-  const result = routeProbe.value?.carriers[carrier]
-  const quality = result ? getRouteQuality(carrier, result.asns) : '未识别'
-  if (quality === '未识别')
-    return { label: '', className: '' }
-  if (quality === '精品')
-    return { label: quality, className: 'text-success' }
-  if (quality === '优质')
-    return { label: quality, className: 'text-sky-500' }
-  if (quality === '普通')
-    return { label: quality, className: 'text-warning' }
-  return { label: quality, className: 'text-muted-foreground' }
-}
-
-const routeProbeStateText = computed(() => {
-  const state = routeProbe.value?.state
-  if (state === 'ok') return '已识别'
-  if (state === 'mixed') return '混合线路'
-  if (state === 'missing_traceroute') return '未安装 traceroute'
-  if (state === 'remote_disabled') return '远程控制已关闭'
-  if (state === 'unknown') return '未识别'
-  return routeProbe.value ? '探测失败' : '未探测'
-})
-
-async function probeNodeRoute(): Promise<void> {
-  if (routeProbeBusy.value || routeProbeStarted.value || !appStore.privateFeaturesAllowed)
-    return
-  if (!await appStore.requireLoginPermission('advancedTools'))
-    return
-  routeProbeStarted.value = true
-  routeProbeBusy.value = true
-  routeProbeError.value = ''
-  try {
-    const result = await executeRouteProbe(props.node.uuid, appStore.routeProbeAutoInstall)
-    const recognized = Object.values(result.carriers).some(carrier => carrier.state === 'identified' || carrier.state === 'mixed')
-    if (!recognized)
-      throw new Error(result.state === 'missing_traceroute' ? '节点未安装 traceroute' : '未识别到运营商骨干 ASN，已保留上一次结果')
-    const current = { ...appStore.routeProbeResults, [props.node.uuid]: result }
-    const theme = appStore.publicSettings?.theme
-    if (!theme)
-      throw new Error('无法确定当前主题')
-    await saveRouteProbeResults(theme, current)
-    appStore.setRouteProbeResults(current)
-  }
-  catch (error) {
-    routeProbeError.value = error instanceof Error ? error.message : '路由探测失败'
-  }
-  finally {
-    routeProbeBusy.value = false
-  }
-}
-
-onMounted(() => {
-  if (!appStore.routeProbeAutoDetect || !appStore.privateFeaturesAllowed)
-    return
-  if (!routeProbe.value)
-    void probeNodeRoute()
-  routeProbeTimer = setInterval(() => {
-    routeProbeStarted.value = false
-    void probeNodeRoute()
-  }, appStore.routeProbeIntervalMinutes * 60_000)
-})
-
-onUnmounted(() => {
-  if (routeProbeTimer)
-    clearInterval(routeProbeTimer)
-})
 
 const nodeMessage = computed(() => props.node.message?.trim() ?? '')
 const nodeMessageTooltip = computed(() => {
@@ -529,59 +460,61 @@ function hasRegion(region: string | null | undefined): boolean {
 
         <!-- 网络概览：实时速率、累计流量与配额信息 -->
         <section class="flex flex-col gap-1 rounded-lg bg-slate-500/5 p-1.5" data-network-overview>
-          <div class="text-[11px] text-muted-foreground">网络概览</div>
-        <div class="grid gap-1.5" :class="nodeCardMetricGridClass">
-          <!-- 实时网速 -->
-          <div class="flex flex-col gap-0.5 rounded-lg bg-slate-500/5 min-w-0 overflow-hidden" :class="nodeCardMetricBoxClass">
-            <div class="text-[11px] text-success flex items-center gap-1">
-              <Icon icon="tabler:chevron-up" width="11" height="11" />
-              <span class="truncate min-w-0 overflow-hidden">{{ formatBytesPerSecond(props.node.net_out ?? 0) }}</span>
-            </div>
-            <div class="text-[11px] text-blue-600 flex items-center gap-1">
-              <Icon icon="tabler:chevron-down" width="11" height="11" />
-              <span class="truncate min-w-0 overflow-hidden">{{ formatBytesPerSecond(props.node.net_in ?? 0) }}</span>
-            </div>
+          <div class="text-[11px] text-muted-foreground">
+            网络概览
           </div>
+          <div class="grid gap-1.5" :class="nodeCardMetricGridClass">
+            <!-- 实时网速 -->
+            <div class="flex flex-col gap-0.5 rounded-lg bg-slate-500/5 min-w-0 overflow-hidden" :class="nodeCardMetricBoxClass">
+              <div class="text-[11px] text-success flex items-center gap-1">
+                <Icon icon="tabler:chevron-up" width="11" height="11" />
+                <span class="truncate min-w-0 overflow-hidden">{{ formatBytesPerSecond(props.node.net_out ?? 0) }}</span>
+              </div>
+              <div class="text-[11px] text-blue-600 flex items-center gap-1">
+                <Icon icon="tabler:chevron-down" width="11" height="11" />
+                <span class="truncate min-w-0 overflow-hidden">{{ formatBytesPerSecond(props.node.net_in ?? 0) }}</span>
+              </div>
+            </div>
 
-          <!-- 总流量 -->
-          <div class="flex flex-col gap-0.5 rounded-lg bg-slate-500/5 min-w-0 overflow-hidden" :class="nodeCardMetricBoxClass">
-            <div class="text-[11px] text-muted-foreground flex items-center gap-1" data-machine-direction="up">
-              <Icon icon="tabler:upload" width="11" height="11" />
-              <span class="truncate min-w-0 overflow-hidden">{{ formatBytes(props.node.net_total_up ?? 0) }}</span>
+            <!-- 总流量 -->
+            <div class="flex flex-col gap-0.5 rounded-lg bg-slate-500/5 min-w-0 overflow-hidden" :class="nodeCardMetricBoxClass">
+              <div class="text-[11px] text-muted-foreground flex items-center gap-1" data-machine-direction="up">
+                <Icon icon="tabler:upload" width="11" height="11" />
+                <span class="truncate min-w-0 overflow-hidden">{{ formatBytes(props.node.net_total_up ?? 0) }}</span>
+              </div>
+              <div class="text-[11px] text-muted-foreground flex items-center gap-1" data-machine-direction="down">
+                <Icon icon="tabler:download" width="11" height="11" />
+                <span class="truncate min-w-0 overflow-hidden">{{ formatBytes(props.node.net_total_down ?? 0) }}</span>
+              </div>
             </div>
-            <div class="text-[11px] text-muted-foreground flex items-center gap-1" data-machine-direction="down">
-              <Icon icon="tabler:download" width="11" height="11" />
-              <span class="truncate min-w-0 overflow-hidden">{{ formatBytes(props.node.net_total_down ?? 0) }}</span>
-            </div>
-          </div>
 
-          <!-- 第三列：有价格显示剩余天数+价格，否则显示负载 -->
-          <div class="flex flex-col gap-0.5 rounded-lg bg-slate-500/5 min-w-0 overflow-hidden" :class="nodeCardMetricBoxClass">
-            <template v-if="remainingInfoTags.length">
-              <div
-                v-for="(item, i) in remainingInfoTags" :key="i"
-                class="text-[11px] flex items-center gap-0.5"
-                :class="item.className ?? 'text-muted-foreground'"
-              >
-                <Icon :icon="item.icon" width="11" height="11" class="shrink-0" />
-                <span v-if="item.text" class="truncate min-w-0 overflow-hidden">{{ item.text }}</span>
-                <template v-else>
-                  <span v-if="item.prefix" class="shrink-0">{{ item.prefix }}</span>
-                  <span v-if="item.value" class="shrink-0 tabular-nums">{{ item.value }}</span>
-                  <span v-if="item.unit" class="shrink-0">{{ item.unit }}</span>
-                </template>
-              </div>
-            </template>
-            <template v-else>
-              <div class="text-[11px] text-muted-foreground truncate">
-                {{ (props.node.load ?? 0).toFixed(2) }}
-              </div>
-              <div class="text-[11px] text-muted-foreground truncate">
-                {{ (props.node.load5 ?? 0).toFixed(2) }} / {{ (props.node.load15 ?? 0).toFixed(2) }}
-              </div>
-            </template>
+            <!-- 第三列：有价格显示剩余天数+价格，否则显示负载 -->
+            <div class="flex flex-col gap-0.5 rounded-lg bg-slate-500/5 min-w-0 overflow-hidden" :class="nodeCardMetricBoxClass">
+              <template v-if="remainingInfoTags.length">
+                <div
+                  v-for="(item, i) in remainingInfoTags" :key="i"
+                  class="text-[11px] flex items-center gap-0.5"
+                  :class="item.className ?? 'text-muted-foreground'"
+                >
+                  <Icon :icon="item.icon" width="11" height="11" class="shrink-0" />
+                  <span v-if="item.text" class="truncate min-w-0 overflow-hidden">{{ item.text }}</span>
+                  <template v-else>
+                    <span v-if="item.prefix" class="shrink-0">{{ item.prefix }}</span>
+                    <span v-if="item.value" class="shrink-0 tabular-nums">{{ item.value }}</span>
+                    <span v-if="item.unit" class="shrink-0">{{ item.unit }}</span>
+                  </template>
+                </div>
+              </template>
+              <template v-else>
+                <div class="text-[11px] text-muted-foreground truncate">
+                  {{ (props.node.load ?? 0).toFixed(2) }}
+                </div>
+                <div class="text-[11px] text-muted-foreground truncate">
+                  {{ (props.node.load5 ?? 0).toFixed(2) }} / {{ (props.node.load15 ?? 0).toFixed(2) }}
+                </div>
+              </template>
+            </div>
           </div>
-        </div>
         </section>
 
         <!-- 回程线路需要路由探测数据；Ping 目标与延迟不能推断 CN2/9929/CMIN2 -->
@@ -589,12 +522,25 @@ function hasRegion(region: string | null | undefined): boolean {
           <div class="flex items-center justify-between text-[11px] text-muted-foreground">
             <span>三网线路</span>
           </div>
-          <div v-for="carrier in routeProbeCarriers" :key="`${carrier.key}-route`" class="grid min-h-7 min-w-0 grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-1.5 py-1 text-[10px]">
-            <span class="flex w-10 shrink-0 items-center gap-1 text-muted-foreground"><span class="size-1.5 rounded-full" :class="routeCarrierDotClass[carrier.key]" />{{ carrier.label }}</span>
-            <span class="min-w-0 flex-1 truncate text-muted-foreground" :title="routeProfileTitle(carrier.key)">{{ routeProfileText(carrier.key) }}</span>
-            <span v-if="routeQuality(carrier.key).label" class="shrink-0 text-[9px]" :class="routeQuality(carrier.key).className">{{ routeQuality(carrier.key).label }}</span>
+          <div class="route-columns grid items-center gap-y-1" data-route-columns>
+            <div class="contents text-[9px] text-muted-foreground">
+              <span /><span>出发线路</span><span aria-hidden="true" /><span class="pr-1.5">落地线路</span><span class="text-right" data-route-tier-header />
+            </div>
+            <div v-for="carrier in routeProbeCarriers" :key="`${carrier.key}-route`" class="contents text-[10px]" :title="routeProfileTitle(carrier.key)" data-route-row>
+              <span class="route-carrier-cell flex min-h-7 items-center gap-1 py-1 text-muted-foreground"><span class="size-1.5 shrink-0 rounded-full" :class="routeCarrierDotClass[carrier.key]" />{{ carrier.label }}</span>
+              <span class="flex min-h-7 items-center whitespace-nowrap py-1 text-muted-foreground" data-route-passage>{{ routeProbe?.carriers[carrier.key].passage || '--' }}</span>
+              <span class="route-dot-cell" aria-hidden="true">
+                <span class="route-dotted-line" :class="ROUTE_DOT_COLORS[routeTier(carrier.key)]" data-route-dots="18">
+                  <span v-for="dot in 18" :key="dot" class="route-dot" />
+                </span>
+              </span>
+              <span class="flex min-h-7 items-center whitespace-nowrap py-1 pr-1.5 text-muted-foreground" data-route-landing>{{ routeProbe?.carriers[carrier.key].landing ? `${routeProbe.carriers[carrier.key].landingConfirmed ? '' : '末段 '}${routeProbe.carriers[carrier.key].landing}` : '--' }}</span>
+              <span class="min-h-7 whitespace-nowrap py-1 text-right" :class="ROUTE_TIER_COLORS[routeTier(carrier.key)]" data-route-tier>{{ routeTier(carrier.key) }}</span>
+            </div>
           </div>
-          <div v-if="routeProbeError" class="truncate text-[10px] text-destructive" :title="routeProbeError">{{ routeProbeError }}</div>
+          <div v-if="routeProbeError" class="truncate text-[10px] text-destructive" :title="routeProbeError">
+            {{ routeProbeError }}
+          </div>
         </section>
 
         <!-- 三网质量：历史分条来自实际 Ping 记录，标签由平均延迟和丢包率计算 -->
@@ -646,5 +592,35 @@ function hasRegion(region: string | null | undefined): boolean {
 .node-card {
   position: relative;
   overflow: hidden;
+}
+/* Shared intrinsic text columns keep all three fixed dot groups aligned. */
+.route-columns {
+  grid-template-columns: max-content max-content minmax(0, 1fr) max-content 24px;
+}
+/* Reserve real breathing room after carrier names without spacing text characters. */
+.route-carrier-cell {
+  padding-inline-end: 2ch;
+  white-space: nowrap;
+}
+.route-dot-cell {
+  container-type: inline-size;
+  display: flex;
+  min-width: 0;
+  justify-content: center;
+  align-items: center;
+  margin-inline: 4px;
+}
+.route-dotted-line {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: clamp(1px, 2.8cqw, 3px);
+}
+.route-dot {
+  flex: 0 0 auto;
+  width: clamp(1px, 2.8cqw, 3px);
+  height: clamp(1px, 2.8cqw, 3px);
+  border-radius: 50%;
+  background-color: currentColor;
 }
 </style>

@@ -1,97 +1,140 @@
 import type { RouteProbeMap, RouteProbeResult } from '@/utils/routeProbe'
-import { parseRouteProbeOutput, ROUTE_PROBE_COMMAND, ROUTE_PROBE_INSTALL_COMMAND } from '@/utils/routeProbe'
+import { requestManager } from '@/services/request.service'
+import {
+  mergeRouteResult,
+  parseRouteProbeMap,
+  parseRouteProbeOutput,
+  ROUTE_PROBE_COMMAND,
+  ROUTE_PROBE_INSTALL_COMMAND,
+} from '@/utils/routeProbe'
 
-interface ExecTaskResponse {
-  success?: boolean
-  task_id?: string
-  status?: string
-  data?: { task_id?: string }
-  message?: string
-}
-
-interface ExecTaskResult {
-  result?: string
-  exit_code?: number | null
-  finished_at?: string | null
-}
-
-interface ExecResultsResponse {
-  success?: boolean
-  results?: ExecTaskResult[]
-  status?: string
-  data?: ExecTaskResult[]
-  message?: string
-}
-
-function getTaskId(data: ExecTaskResponse): string | undefined {
-  return data.task_id || data.data?.task_id
-}
-
-function getResults(data: ExecResultsResponse): ExecTaskResult[] {
-  return data.results || data.data || []
-}
-
-async function jsonOrEmpty(response: Response): Promise<Record<string, unknown>> {
-  return await response.json().catch(() => ({})) as Record<string, unknown>
-}
-
-/**
- * Run only the compile-time fixed route probe. The UUID is sent as an API
- * client selector and is never interpolated into the shell command.
- */
-export async function executeRouteProbe(uuid: string, autoInstall = false, signal?: AbortSignal): Promise<RouteProbeResult> {
-  const response = await fetch('/api/admin/task/exec', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ command: autoInstall ? ROUTE_PROBE_INSTALL_COMMAND : ROUTE_PROBE_COMMAND, clients: [uuid] }),
-    signal,
-  })
-  const data = await jsonOrEmpty(response) as ExecTaskResponse
-  if (!response.ok || !getTaskId(data))
-    throw new Error(typeof data.message === 'string' ? data.message : `远程探测请求失败（HTTP ${response.status}）`)
-
-  const taskId = getTaskId(data) as string
-  const deadline = Date.now() + 70_000
-  while (Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    const resultResponse = await fetch(`/api/admin/task/${encodeURIComponent(taskId)}/result`, { credentials: 'include', signal })
-    const resultData = await jsonOrEmpty(resultResponse) as ExecResultsResponse
-    if (!resultResponse.ok)
-      throw new Error(typeof resultData.message === 'string' ? resultData.message : `读取探测结果失败（HTTP ${resultResponse.status}）`)
-    const results = getResults(resultData)
-    const result = results.find(item => item.finished_at !== null) || results[0]
-    if (!result)
-      continue
-    if (result.finished_at === null)
-      continue
-    const output = typeof result.result === 'string' ? result.result : ''
-    if (result.exit_code !== 0 && !output.includes('ROUTE_PROBE_ERROR:missing_traceroute'))
-      throw new Error(output.trim() || '节点未返回有效探测结果')
-    return parseRouteProbeOutput(output)
+// Mutating task creation/settings saves are never retried automatically.
+async function request(
+  url: string,
+  init: RequestInit = {},
+  signal?: AbortSignal,
+  timeout = 15_000,
+): Promise<Record<string, unknown>> {
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  if (signal?.aborted)
+    controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
+  const timer = setTimeout(abort, timeout)
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      ...init,
+      signal: controller.signal,
+    })
+    const body = (await response.json().catch(() => ({}))) as Record<string, unknown>
+    if (body.status === 'error')
+      throw new Error(typeof body.message === 'string' ? body.message : '服务端拒绝路由请求')
+    if (!response.ok)
+      throw new Error(`路由请求失败（HTTP ${response.status}）`)
+    return body
   }
-  throw new Error('路由探测超时')
+  finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', abort)
+  }
+}
+export async function runRouteTask(
+  uuid: string,
+  command: string,
+  budget: number,
+  signal: AbortSignal,
+  interval = 1000,
+  httpTimeout = 15_000,
+): Promise<{ output: string, exitCode: number | null }> {
+  const data = await request(
+    '/api/admin/task/exec',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command, clients: [uuid] }),
+    },
+    signal,
+    httpTimeout,
+  )
+  const taskId = data.task_id || (data.data as { task_id?: unknown } | undefined)?.task_id
+  if (typeof taskId !== 'string' || !taskId)
+    throw new Error('未收到远程任务ID')
+  const deadline = Date.now() + budget
+  while (Date.now() < deadline) {
+    if (signal.aborted)
+      throw new Error('探测已取消')
+    await new Promise(resolve => setTimeout(resolve, interval))
+    if (signal.aborted)
+      throw new Error('探测已取消')
+    if (Date.now() >= deadline)
+      break
+    const result = await request(
+      `/api/admin/task/${encodeURIComponent(taskId)}/result`,
+      {},
+      signal,
+      Math.min(httpTimeout, deadline - Date.now()),
+    )
+    if (Date.now() >= deadline)
+      break
+    const rows = result.results || result.data
+    if (!Array.isArray(rows))
+      continue
+    const finished = rows.find(
+      row => row && typeof row.finished_at === 'string' && row.finished_at.length > 0,
+    )
+    if (finished) {
+      return {
+        output: typeof finished.result === 'string' ? finished.result : '',
+        exitCode: typeof finished.exit_code === 'number' ? finished.exit_code : null,
+      }
+    }
+  }
+  throw new Error('路由任务等待超时；远端固定命令有独立超时限制')
+}
+export function executeRouteProbe(uuid: string, autoInstall = false): Promise<RouteProbeResult> {
+  return requestManager.run(
+    `route-probe:${uuid}:${autoInstall}`,
+    async (signal) => {
+      if (autoInstall) {
+        const install = await runRouteTask(uuid, ROUTE_PROBE_INSTALL_COMMAND, 285_000, signal)
+        if (install.exitCode !== 0)
+          throw new Error('traceroute 安装失败或超时，未继续探测')
+      }
+      const result = await runRouteTask(uuid, ROUTE_PROBE_COMMAND, 420_000, signal)
+      // Parse per-carrier evidence even when the wrapper exits nonzero.
+      const parsed = parseRouteProbeOutput(result.output)
+      if (!result.output.includes('ROUTE_PROBE_CARRIER:') && !parsed.message)
+        throw new Error('节点没有返回结构化探测结果')
+      return parsed
+    },
+    { timeout: autoInstall ? 740_000 : 440_000, retryAttempts: 0 },
+  )
 }
 
-export async function saveRouteProbeResults(theme: string, results: RouteProbeMap, signal?: AbortSignal): Promise<void> {
-  const settingsResponse = await fetch('/api/public', { cache: 'no-store', credentials: 'include', signal })
-  const publicData = await jsonOrEmpty(settingsResponse)
-  // Komari REST API returns { status, message, data: { theme_settings } }.
-  // Some compatible deployments expose the payload directly, so accept both
-  // shapes without treating the response envelope as the settings object.
-  const payload = publicData.data && typeof publicData.data === 'object' && !Array.isArray(publicData.data)
-    ? publicData.data as Record<string, unknown>
-    : publicData
-  const current = payload.theme_settings
-  if (!settingsResponse.ok || !current || typeof current !== 'object' || Array.isArray(current))
-    throw new Error('无法读取当前主题设置')
-  const response = await fetch(`/api/admin/theme/settings?theme=${encodeURIComponent(theme)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ ...(current as Record<string, unknown>), pandaOpsRouteProbeResults: results }),
-    signal,
-  })
-  if (!response.ok)
-    throw new Error(`保存路由探测结果失败（HTTP ${response.status}）`)
+let saveQueue: Promise<unknown> = Promise.resolve()
+/** Serialize per-node deltas, fetch latest settings inside the queue, merge each carrier. */
+export function saveRouteProbeResults(theme: string, delta: RouteProbeMap): Promise<RouteProbeMap> {
+  const save = saveQueue
+    .catch(() => {})
+    .then(async () => {
+      const data = await request('/api/public', { cache: 'no-store' })
+      const payload
+        = data.data && typeof data.data === 'object' ? (data.data as Record<string, unknown>) : data
+      const current = payload.theme_settings
+      if (!current || typeof current !== 'object' || Array.isArray(current))
+        throw new Error('无法读取当前主题设置')
+      const settings = current as Record<string, unknown>
+      const merged = parseRouteProbeMap(settings.pandaOpsRouteProbeResults)
+      for (const [uuid, next] of Object.entries(delta))
+        merged[uuid] = mergeRouteResult(merged[uuid], next)
+      await request(`/api/admin/theme/settings?theme=${encodeURIComponent(theme)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...settings, pandaOpsRouteProbeResults: merged }),
+      })
+      return merged
+    })
+  saveQueue = save
+  return save
 }

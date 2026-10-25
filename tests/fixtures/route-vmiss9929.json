@@ -1,0 +1,997 @@
+{
+  "carriers": {
+    "mobile": {
+      "asns": [
+        979,
+        6134,
+        14618,
+        16509,
+        58807,
+        9808,
+        9808,
+        9808,
+        9808,
+        56048
+      ],
+      "attempts": [
+        {
+          "exitCode": 0,
+          "hops": [
+            {
+              "asns": [
+                979,
+                6134
+              ],
+              "distance": 1,
+              "ips": [
+                "38.207.162.254"
+              ],
+              "raw": " 1  38.207.162.254 [AS979/AS6134]  96.001 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 2,
+              "ips": [
+                "10.52.4.1"
+              ],
+              "raw": " 2  10.52.4.1 [*]  0.866 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 3,
+              "ips": [],
+              "raw": " 3  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                14618,
+                16509
+              ],
+              "distance": 4,
+              "ips": [
+                "100.58.80.7"
+              ],
+              "raw": " 4  100.58.80.7 [AS14618/AS16509]  8.944 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 5,
+              "ips": [
+                "10.58.80.7"
+              ],
+              "raw": " 5  10.58.80.7 [*]  0.854 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 6,
+              "ips": [],
+              "raw": " 6  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 7,
+              "ips": [],
+              "raw": " 7  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                58807
+              ],
+              "distance": 8,
+              "ips": [
+                "223.120.161.5"
+              ],
+              "raw": " 8  223.120.161.5 [AS58807]  126.180 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 9,
+              "ips": [
+                "221.183.92.121"
+              ],
+              "raw": " 9  221.183.92.121 [AS9808]  126.394 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 10,
+              "ips": [
+                "221.183.87.245"
+              ],
+              "raw": "10  221.183.87.245 [AS9808]  126.387 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 11,
+              "ips": [
+                "221.183.87.226"
+              ],
+              "raw": "11  221.183.87.226 [AS9808]  127.659 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 12,
+              "ips": [
+                "221.183.119.69"
+              ],
+              "raw": "12  221.183.119.69 [AS9808]  152.207 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 13,
+              "ips": [],
+              "raw": "13  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                56048
+              ],
+              "distance": 14,
+              "ips": [
+                "211.136.88.1"
+              ],
+              "raw": "14  211.136.88.1 [AS56048]  150.684 ms",
+              "source": "query",
+              "timeout": false
+            }
+          ],
+          "method": "icmp",
+          "reached": true,
+          "target": "211.136.88.1"
+        },
+        {
+          "exitCode": 0,
+          "hops": [
+            {
+              "asns": [],
+              "distance": 1,
+              "ips": [],
+              "raw": " 1  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 2,
+              "ips": [
+                "10.52.3.1"
+              ],
+              "raw": " 2  10.52.3.1 [*]  5.935 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 3,
+              "ips": [],
+              "raw": " 3  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                14618,
+                16509
+              ],
+              "distance": 4,
+              "ips": [
+                "100.58.80.7"
+              ],
+              "raw": " 4  100.58.80.7 [AS14618/AS16509]  5.904 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 5,
+              "ips": [
+                "10.58.80.7"
+              ],
+              "raw": " 5  10.58.80.7 [*]  0.683 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 6,
+              "ips": [],
+              "raw": " 6  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 7,
+              "ips": [],
+              "raw": " 7  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                58807
+              ],
+              "distance": 8,
+              "ips": [
+                "223.120.161.5"
+              ],
+              "raw": " 8  223.120.161.5 [AS58807]  126.181 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 9,
+              "ips": [
+                "221.183.92.117"
+              ],
+              "raw": " 9  221.183.92.117 [AS9808]  127.743 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 10,
+              "ips": [
+                "221.183.87.217"
+              ],
+              "raw": "10  221.183.87.217 [AS9808]  127.297 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 11,
+              "ips": [
+                "221.183.179.25"
+              ],
+              "raw": "11  221.183.179.25 [AS9808]  127.446 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9808
+              ],
+              "distance": 12,
+              "ips": [
+                "111.24.2.141"
+              ],
+              "raw": "12  111.24.2.141 [AS9808]  153.171 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 13,
+              "ips": [],
+              "raw": "13  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                56048
+              ],
+              "distance": 14,
+              "ips": [
+                "211.136.66.129"
+              ],
+              "raw": "14  211.136.66.129 [AS56048]  151.329 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                56048
+              ],
+              "distance": 15,
+              "ips": [
+                "211.136.88.1"
+              ],
+              "raw": "15  211.136.88.1 [AS56048]  161.587 ms",
+              "source": "query",
+              "timeout": false
+            }
+          ],
+          "method": "udp",
+          "reached": true,
+          "target": "211.136.88.1"
+        }
+      ],
+      "label": "混合线路",
+      "lastAttempt": 1792941817198,
+      "lastSuccess": 1792941817198,
+      "route": "AS979 → AS6134 → AS14618 → AS16509 → AS58807 → AS9808 → AS9808 → AS9808 → AS9808 → AS56048",
+      "stale": false,
+      "state": "mixed"
+    },
+    "telecom": {
+      "asns": [
+        979,
+        6134,
+        10099,
+        9929,
+        9929,
+        58730,
+        132537,
+        4134,
+        4134
+      ],
+      "attempts": [
+        {
+          "exitCode": 0,
+          "hops": [
+            {
+              "asns": [
+                979,
+                6134
+              ],
+              "distance": 1,
+              "ips": [
+                "38.207.162.254"
+              ],
+              "raw": " 1  38.207.162.254 [AS979/AS6134]  206.644 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 2,
+              "ips": [
+                "10.52.5.1"
+              ],
+              "raw": " 2  10.52.5.1 [*]  3.212 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 3,
+              "ips": [],
+              "raw": " 3  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 4,
+              "ips": [],
+              "raw": " 4  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                10099
+              ],
+              "distance": 5,
+              "ips": [
+                "162.219.85.173"
+              ],
+              "raw": " 5  162.219.85.173 [AS10099]  140.854 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9929
+              ],
+              "distance": 6,
+              "ips": [
+                "218.105.2.205"
+              ],
+              "raw": " 6  218.105.2.205 [AS9929]  132.109 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9929
+              ],
+              "distance": 7,
+              "ips": [
+                "218.105.131.125"
+              ],
+              "raw": " 7  218.105.131.125 [AS9929]  182.051 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                58730,
+                132537
+              ],
+              "distance": 8,
+              "ips": [
+                "210.78.30.166"
+              ],
+              "raw": " 8  210.78.30.166 [AS58730/AS132537]  161.137 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                4134
+              ],
+              "distance": 9,
+              "ips": [
+                "202.97.16.61"
+              ],
+              "raw": " 9  202.97.16.61 [AS4134]  190.638 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 10,
+              "ips": [],
+              "raw": "10  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                4134
+              ],
+              "distance": 11,
+              "ips": [
+                "202.97.0.1"
+              ],
+              "raw": "11  202.97.0.1 [AS4134]  184.674 ms",
+              "source": "query",
+              "timeout": false
+            }
+          ],
+          "method": "icmp",
+          "reached": true,
+          "target": "202.97.0.1"
+        },
+        {
+          "exitCode": 0,
+          "hops": [
+            {
+              "asns": [],
+              "distance": 1,
+              "ips": [],
+              "raw": " 1  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 2,
+              "ips": [
+                "10.52.1.1"
+              ],
+              "raw": " 2  10.52.1.1 [*]  0.609 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 3,
+              "ips": [],
+              "raw": " 3  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                10099
+              ],
+              "distance": 4,
+              "ips": [
+                "162.219.85.145"
+              ],
+              "raw": " 4  162.219.85.145 [AS10099]  0.842 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                10099
+              ],
+              "distance": 5,
+              "ips": [
+                "162.219.85.9"
+              ],
+              "raw": " 5  162.219.85.9 [AS10099]  145.526 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9929
+              ],
+              "distance": 6,
+              "ips": [
+                "218.105.2.205"
+              ],
+              "raw": " 6  218.105.2.205 [AS9929]  122.772 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9929
+              ],
+              "distance": 7,
+              "ips": [
+                "218.105.131.101"
+              ],
+              "raw": " 7  218.105.131.101 [AS9929]  176.988 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                58730,
+                132537
+              ],
+              "distance": 8,
+              "ips": [
+                "210.78.30.166"
+              ],
+              "raw": " 8  210.78.30.166 [AS58730/AS132537]  160.938 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                4134
+              ],
+              "distance": 9,
+              "ips": [
+                "202.97.81.65"
+              ],
+              "raw": " 9  202.97.81.65 [AS4134]  156.571 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                4134
+              ],
+              "distance": 10,
+              "ips": [
+                "202.97.17.61"
+              ],
+              "raw": "10  202.97.17.61 [AS4134]  149.713 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                4134
+              ],
+              "distance": 11,
+              "ips": [
+                "202.97.0.158"
+              ],
+              "raw": "11  202.97.0.158 [AS4134]  176.486 ms",
+              "source": "query",
+              "timeout": false
+            }
+          ],
+          "method": "udp",
+          "reached": false,
+          "target": "202.97.0.1"
+        }
+      ],
+      "label": "163",
+      "lastAttempt": 1792941817198,
+      "lastSuccess": 1792941817198,
+      "route": "AS979 → AS6134 → AS10099 → AS9929 → AS9929 → AS58730 → AS132537 → AS4134 → AS4134",
+      "stale": false,
+      "state": "identified"
+    },
+    "unicom": {
+      "asns": [
+        979,
+        6134,
+        10099,
+        10099,
+        9929,
+        58730,
+        132537,
+        4837,
+        4837
+      ],
+      "attempts": [
+        {
+          "exitCode": 0,
+          "hops": [
+            {
+              "asns": [
+                979,
+                6134
+              ],
+              "distance": 1,
+              "ips": [
+                "38.207.162.254"
+              ],
+              "raw": " 1  38.207.162.254 [AS979/AS6134]  129.249 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 2,
+              "ips": [
+                "10.52.0.1"
+              ],
+              "raw": " 2  10.52.0.1 [*]  0.632 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 3,
+              "ips": [],
+              "raw": " 3  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                10099
+              ],
+              "distance": 4,
+              "ips": [
+                "162.219.85.145"
+              ],
+              "raw": " 4  162.219.85.145 [AS10099]  0.974 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                10099
+              ],
+              "distance": 5,
+              "ips": [
+                "162.219.85.173"
+              ],
+              "raw": " 5  162.219.85.173 [AS10099]  140.813 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 6,
+              "ips": [],
+              "raw": " 6  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                9929
+              ],
+              "distance": 7,
+              "ips": [
+                "218.105.131.125"
+              ],
+              "raw": " 7  218.105.131.125 [AS9929]  180.702 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                58730,
+                132537
+              ],
+              "distance": 8,
+              "ips": [
+                "210.78.30.146"
+              ],
+              "raw": " 8  210.78.30.146 [AS58730/AS132537]  166.104 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                4837
+              ],
+              "distance": 9,
+              "ips": [
+                "219.158.32.189"
+              ],
+              "raw": " 9  219.158.32.189 [AS4837]  162.496 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                4837
+              ],
+              "distance": 10,
+              "ips": [
+                "219.158.3.1"
+              ],
+              "raw": "10  219.158.3.1 [AS4837]  165.667 ms",
+              "source": "query",
+              "timeout": false
+            }
+          ],
+          "method": "icmp",
+          "reached": true,
+          "target": "219.158.3.1"
+        },
+        {
+          "exitCode": 0,
+          "hops": [
+            {
+              "asns": [],
+              "distance": 1,
+              "ips": [],
+              "raw": " 1  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 2,
+              "ips": [
+                "10.52.8.1"
+              ],
+              "raw": " 2  10.52.8.1 [*]  6.661 ms",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 3,
+              "ips": [],
+              "raw": " 3  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [
+                10099
+              ],
+              "distance": 4,
+              "ips": [
+                "162.219.85.145"
+              ],
+              "raw": " 4  162.219.85.145 [AS10099]  0.602 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                10099
+              ],
+              "distance": 5,
+              "ips": [
+                "162.219.85.173"
+              ],
+              "raw": " 5  162.219.85.173 [AS10099]  132.032 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9929
+              ],
+              "distance": 6,
+              "ips": [
+                "218.105.2.93"
+              ],
+              "raw": " 6  218.105.2.93 [AS9929]  129.504 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                9929
+              ],
+              "distance": 7,
+              "ips": [
+                "218.105.131.125"
+              ],
+              "raw": " 7  218.105.131.125 [AS9929]  186.457 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [
+                58730,
+                132537
+              ],
+              "distance": 8,
+              "ips": [
+                "210.78.30.146"
+              ],
+              "raw": " 8  210.78.30.146 [AS58730/AS132537]  157.126 ms",
+              "source": "query",
+              "timeout": false
+            },
+            {
+              "asns": [],
+              "distance": 9,
+              "ips": [],
+              "raw": " 9  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 10,
+              "ips": [],
+              "raw": "10  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 11,
+              "ips": [],
+              "raw": "11  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 12,
+              "ips": [],
+              "raw": "12  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 13,
+              "ips": [],
+              "raw": "13  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 14,
+              "ips": [],
+              "raw": "14  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 15,
+              "ips": [],
+              "raw": "15  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 16,
+              "ips": [],
+              "raw": "16  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 17,
+              "ips": [],
+              "raw": "17  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 18,
+              "ips": [],
+              "raw": "18  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 19,
+              "ips": [],
+              "raw": "19  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 20,
+              "ips": [],
+              "raw": "20  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 21,
+              "ips": [],
+              "raw": "21  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 22,
+              "ips": [],
+              "raw": "22  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 23,
+              "ips": [],
+              "raw": "23  *",
+              "source": "none",
+              "timeout": true
+            },
+            {
+              "asns": [],
+              "distance": 24,
+              "ips": [],
+              "raw": "24  *",
+              "source": "none",
+              "timeout": true
+            }
+          ],
+          "method": "udp",
+          "reached": false,
+          "target": "219.158.3.1"
+        }
+      ],
+      "label": "混合线路",
+      "lastAttempt": 1792941817198,
+      "lastSuccess": 1792941817198,
+      "route": "AS979 → AS6134 → AS10099 → AS10099 → AS9929 → AS58730 → AS132537 → AS4837 → AS4837",
+      "stale": false,
+      "state": "mixed"
+    }
+  },
+  "direction": "egress",
+  "state": "mixed",
+  "testedAt": 1792941817198,
+  "version": 2
+}

@@ -1,3 +1,42 @@
+## 1.1.7 — Carrier label spacing (local review)
+
+- Give carrier names an intrinsic shared column with explicit 2ch end padding before departure labels; keep all three departure values aligned.
+- Preserve centered fixed18 dots, route text, reference tiers, state colors and existing glass styling. Presentation only; no classifier, tier-rule, collector or persistence changes.
+
+## 1.1.6 — Fixed centered dots (local review)
+
+- Supersede the 1.1.5 flexible repeat rail with exactly 18 real dots per carrier, following the latest screenshot clarification (replaces the earlier 20-dot request).
+- Center the group in a separate shared flexible grid column; use 3px dots/3px gaps with container-relative shrinking on narrow cards, preserving route text and landing alignment.
+- Ordinary dots are yellow; excellent blue and boutique green; unknown/expired dots are red (missing evidence, not a bad-line verdict). Separate dot/text color maps preserve existing tier text colors.
+- Leave the tier header cell empty while retaining each row's reference tier, color and tooltip. No classification, collection, persistence or tier-rule changes.
+
+## 1.1.5 — Flexible dotted route rail (local review)
+
+- Replace the fixed five dots with a static 3px circular repeat-x rail at 7px pitch, inheriting the existing reference-tier color.
+- Start after intrinsic departure text with 2ch margins at both ends; fill available space and share landing/header columns across all carriers. Shrink the rail rather than truncate route text.
+- Presentation only: route classification, tiers, collection and storage unchanged. No deployment or new node commands.
+
+## 1.1.4 — Static dotted routes and reference tiers (local review)
+
+- Replace the arrow with five static, grade-colored dots; add a final reference-tier column, bounded truncating layout and original typography/glass/carrier colors.
+- Derive 普通／优秀／精品 only from existing ordered evidence, with conservative freshness, completeness, source and disagreement gates. No Ping inputs or GIA/SLA claims; stale/unknown evidence is unrated.
+- Preserve collection, persistence and 1.1.3 route segment classification; extend matrix/cache/fixture/structural layout tests. No deployment or new node commands.
+
+## 1.1.3 — Ordered transit and domestic delivery (local review)
+
+- Show compact “出发线路 → 落地线路” columns with original glass tokens and carrier dots, without bidirectional or quality-tier claims.
+- Distinguish ordered cross-carrier transit, domestic delivery, access ASN, unknown tails and destination-only evidence; normal backbone handoff is not mixed routing.
+- Prefer complete attempts, disclose incomplete-method differences and source conflicts, suppress equally complete contradictory main labels, preserve re-entry and all hops.
+- Add isolated six-attempt VMISS public-cache fixture and synthetic path/display regressions. No deployment or new node commands.
+
+## 1.1.2 — Route evidence accuracy
+
+- Correct mobile ASN mapping; conservative multi-hop classification, mixed routes never rated, no GIA claims.
+- Keep ordered hop/attempt evidence, bounded ICMP + UDP collection with optional ASN/plain fallback; separate opt-in installation.
+- Preserve per-carrier last success with latest attempt/staleness; serialize node-delta saves and refresh old caches.
+- Retain card layout/colors; detailed evidence/freshness in tooltips. Add deterministic shell, transport and cache tests.
+- See README for IPv4 scope, node dependencies, timeout budgets and cross-browser CAS limitation.
+
 # Changelog
 
 All notable Glassmorphism Enhanced changes are documented here. Upstream history remains in the upstream repository and preserved Git history.
