@@ -57,10 +57,12 @@ const NAMES: Record<number, string> = {
   58807: 'CMIN2',
   58453: 'CMI',
   9808: 'CMNET',
+  10099: '10099',
+  23764: 'CN2-CTG',
 }
 const CARRIER_ASNS: Record<RouteCarrier, number[]> = {
-  telecom: [4809, 4134],
-  unicom: [9929, 4837],
+  telecom: [4809, 4134, 23764],
+  unicom: [9929, 4837, 10099],
   mobile: [58807, 58453, 9808],
 }
 export type RouteQuality = '精品' | '优质' | '普通' | '未识别'
@@ -160,19 +162,27 @@ export function getRouteQuality(carrier: RouteCarrier, asns: number[]): RouteQua
 // preceding backbone can be described as a domestic delivery network.
 const ACCESS_ASNS: Record<RouteCarrier, number[]> = {
   telecom: [],
-  unicom: [],
+  // CUG (10099) is Unicom's international entry network; the China-bound
+  // backbone segments are 9929/4837 and they front the passage label.
+  unicom: [10099],
   mobile: [56048],
 }
 export function summarizeRouteAttempt(carrier: RouteCarrier, attempt: RouteAttempt) {
   const hops = [...attempt.hops].sort((a, b) => a.distance - b.distance)
+  // Access/entry networks (e.g. CUG 10099) never front the passage label;
+  // the front shows the China-bound backbone segment only.
   const known = hops.flatMap((hop, index) => [...new Set(hop.asns)]
-    .filter(asn => NAMES[asn])
+    .filter(asn => NAMES[asn] && !ACCESS_ASNS[carrier].includes(asn))
     .map(asn => ({ asn, index })))
   const runs = known.filter((item, i) => item.asn !== known[i - 1]?.asn)
   const conflict = hops.some(h => h.source === 'conflict'
     || new Set(h.asns.filter(n => NAMES[n])).size > 1)
   const last = runs.at(-1)
-  const delivery = last && CARRIER_ASNS[carrier].includes(last.asn) ? last : undefined
+  // Lenient delivery: any observed backbone ASN counts, not only the final hop.
+  // Probing to carrier speed-test points means core hops may be filtered while
+  // transit hops still identify the backbone; requiring the last hop discards that.
+  const backboneRuns = runs.filter(r => CARRIER_ASNS[carrier].includes(r.asn))
+  const delivery = backboneRuns.at(-1) ?? (last && CARRIER_ASNS[carrier].includes(last.asn) ? last : undefined)
   const deliveryEnd = delivery ? known.filter(h => h.asn === delivery.asn).at(-1)!.index : -1
   const suffix = delivery ? hops.slice(deliveryEnd + 1) : []
   const suffixKnown = suffix.length === 0 || Boolean(suffix.at(-1)?.asns.length
@@ -372,23 +382,31 @@ command -v timeout >/dev/null 2>&1 || { echo ROUTE_PROBE_ERROR:missing_timeout; 
 A=''; timeout -k 1 3 traceroute --help 2>&1 | grep -q -- '-A' && A='-A'
 probe() {
   echo "ROUTE_PROBE_CARRIER:$1"
-  for method in icmp udp; do
-    echo "ROUTE_ATTEMPT:$method:$2"
-    if [ "$method" = icmp ]; then I='-I'; else I=''; fi
-    # No early-success heuristic: two bounded independent attempts preserve contradictions.
-    timeout -k 2 32 traceroute $I $A -n -q 1 -w 1 -m 24 "$2" 2>&1
+  # ICMP first; domestic speed-test points usually filter UDP probes.
+  echo "ROUTE_ATTEMPT:icmp:$2"
+  out=$(timeout -k 2 40 traceroute -I $A -n -q 2 -w 2 -m 24 "$2" 2>&1)
+  rc=$?
+  printf '%s\n' "$out"
+  echo "ROUTE_EXIT:$rc"
+  if [ "$rc" -ne 0 ] && [ -n "$A" ]; then
+    echo "ROUTE_ATTEMPT:icmp_plain:$2"
+    out=$(timeout -k 2 34 traceroute -I -n -q 2 -w 2 -m 24 "$2" 2>&1)
     rc=$?
+    printf '%s\n' "$out"
     echo "ROUTE_EXIT:$rc"
-    if [ "$rc" -ne 0 ] && [ -n "$A" ]; then
-      echo "ROUTE_ATTEMPT:\${method}_plain:$2"
-      timeout -k 2 26 traceroute $I -n -q 1 -w 1 -m 24 "$2" 2>&1
-      echo "ROUTE_EXIT:$?"
-    fi
-  done
+  fi
+  # Skip the UDP attempt when ICMP already produced usable hops; a second method
+  # only helps when the first was nearly empty, and disagreement clears labels.
+  valid=$(printf '%s' "$out" | grep -cE '^[[:space:]]*[0-9]+[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+  if [ "\${valid:-0}" -lt 3 ]; then
+    echo "ROUTE_ATTEMPT:udp:$2"
+    timeout -k 2 40 traceroute $A -n -q 2 -w 2 -m 24 "$2" 2>&1
+    echo "ROUTE_EXIT:$?"
+  fi
 }
-probe telecom 202.97.0.1
-probe unicom 219.158.3.1
-probe mobile 211.136.88.1
+probe telecom 219.141.140.10
+probe unicom 202.106.195.68
+probe mobile 221.179.155.161
 exit 0
 `
 // Installation is a separate opt-in task with its own bound, never part of a probe.

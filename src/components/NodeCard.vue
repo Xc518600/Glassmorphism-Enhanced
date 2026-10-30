@@ -141,8 +141,16 @@ const routeCarrierDotClass: Record<RouteCarrier, string> = {
   mobile: 'bg-emerald-500',
 }
 const routeTierNow = useTimestamp({ interval: 1000 })
+// Single front label: multi-hop passages keep the acting backbone only.
+function routePassageLabel(carrier: RouteCarrier) {
+  const passage = routeProbe.value?.carriers[carrier].passage
+  if (!passage)
+    return '--'
+  const legs = passage.split(' → ').filter(Boolean)
+  return legs.at(-1) || '--'
+}
 function routeTier(carrier: RouteCarrier) {
-  return getRouteTier(carrier, routeProbe.value?.carriers[carrier], appStore.routeProbeIntervalMinutes * 60_000, routeTierNow.value)
+  return getRouteTier(carrier, routeProbe.value?.carriers[carrier], undefined, routeTierNow.value)
 }
 function routeProfileTitle(carrier: RouteCarrier) {
   const result = routeProbe.value?.carriers[carrier]
@@ -528,13 +536,13 @@ function hasRegion(region: string | null | undefined): boolean {
             </div>
             <div v-for="carrier in routeProbeCarriers" :key="`${carrier.key}-route`" class="contents text-[10px]" :title="routeProfileTitle(carrier.key)" data-route-row>
               <span class="route-carrier-cell flex min-h-7 items-center gap-1 py-1 text-muted-foreground"><span class="size-1.5 shrink-0 rounded-full" :class="routeCarrierDotClass[carrier.key]" />{{ carrier.label }}</span>
-              <span class="flex min-h-7 items-center whitespace-nowrap py-1 text-muted-foreground" data-route-passage>{{ routeProbe?.carriers[carrier.key].passage || '--' }}</span>
+              <span class="flex min-h-7 items-center whitespace-nowrap py-1 text-muted-foreground" data-route-passage>{{ routePassageLabel(carrier.key) }}</span>
               <span class="route-dot-cell" aria-hidden="true">
                 <span class="route-dotted-line" :class="ROUTE_DOT_COLORS[routeTier(carrier.key)]" data-route-dots="18">
                   <span v-for="dot in 18" :key="dot" class="route-dot" />
                 </span>
               </span>
-              <span class="flex min-h-7 items-center whitespace-nowrap py-1 pr-1.5 text-muted-foreground" data-route-landing>{{ routeProbe?.carriers[carrier.key].landing ? `${routeProbe.carriers[carrier.key].landingConfirmed ? '' : '末段 '}${routeProbe.carriers[carrier.key].landing}` : '--' }}</span>
+              <span class="flex min-h-7 items-center whitespace-nowrap py-1 pr-1.5 text-muted-foreground" data-route-landing>{{ routeProbe?.carriers[carrier.key].landing || '--' }}</span>
               <span class="min-h-7 whitespace-nowrap py-1 text-right" :class="ROUTE_TIER_COLORS[routeTier(carrier.key)]" data-route-tier>{{ routeTier(carrier.key) }}</span>
             </div>
           </div>

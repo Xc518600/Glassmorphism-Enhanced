@@ -9,6 +9,7 @@ export function useNodeRouteProbe(uuid: () => string) {
   const busy = ref(false)
   const error = ref('')
   let timer: ReturnType<typeof setInterval> | undefined
+  let staggerTimeout: ReturnType<typeof setTimeout> | undefined
   let disposed = false
   async function probe() {
     if (busy.value || disposed || !app.routeProbeAutoDetect || !app.privateFeaturesAllowed)
@@ -46,29 +47,49 @@ export function useNodeRouteProbe(uuid: () => string) {
       busy.value = false
     }
   }
-  onMounted(() => {
-    if (!app.routeProbeAutoDetect || !app.privateFeaturesAllowed)
-      return
+  function isFresh() {
     const old = result.value
-    if (
-      !old
-      || CARRIERS.some(
+    return Boolean(
+      old
+      && !CARRIERS.some(
         c =>
           old.carriers[c].legacy
           || old.carriers[c].stale
           || Date.now() - (old.carriers[c].lastSuccess || 0) >= app.routeProbeIntervalMinutes * 60_000,
-      )
-    ) {
-      void probe()
-    }
+      ),
+    )
+  }
+  function startTimer() {
+    if (timer)
+      clearInterval(timer)
+    // Recreated on each pass so interval setting changes apply without a reload.
     timer = setInterval(() => {
-      void probe()
+      if (!isFresh())
+        void probe()
     }, app.routeProbeIntervalMinutes * 60_000)
+  }
+  onMounted(() => {
+    if (!app.routeProbeAutoDetect || !app.privateFeaturesAllowed)
+      return
+    // Stagger by node to avoid a mount burst of parallel traceroute tasks.
+    // Deterministic per UUID keeps refreshes stable instead of re-rolling.
+    let stagger = 0
+    const id = uuid()
+    for (const ch of id)
+      stagger = (stagger * 31 + ch.charCodeAt(0)) % 60_000
+    staggerTimeout = setTimeout(() => {
+      if (disposed || !isFresh())
+        return
+      void probe()
+    }, stagger)
+    startTimer()
   })
   onUnmounted(() => {
     disposed = true
     if (timer)
       clearInterval(timer)
+    if (staggerTimeout)
+      clearTimeout(staggerTimeout)
   })
   return { routeProbe: result, routeProbeError: error }
 }
