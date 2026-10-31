@@ -1,3 +1,9 @@
+## 1.1.8 — Auto-install traceroute by default
+
+- Default `routeProbeAutoInstall` to `true` so a freshly added node gets `traceroute` installed and its three-carrier return route measured without any manual step.
+- Keep the same opt-in switch and the same fixed install command; users who prefer no remote package install can turn it off in theme settings.
+- Configuration default only; no classifier, collector, persistence or rendering changes.
+
 ## 1.1.7 — Carrier label spacing (local review)
 
 - Give carrier names an intrinsic shared column with explicit 2ch end padding before departure labels; keep all three departure values aligned.
