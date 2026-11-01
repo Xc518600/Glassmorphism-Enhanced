@@ -138,3 +138,21 @@ export function saveRouteProbeResults(theme: string, delta: RouteProbeMap): Prom
   saveQueue = save
   return save
 }
+
+// 插件 route-autoprobe 在面板服务端定时探测并把快照存在自身目录。
+// 优先读插件快照：没有登录态、不需要有人在浏览器里挂着。
+export async function fetchPluginRouteProbeResults(): Promise<RouteProbeMap | null> {
+  let body: Record<string, unknown>
+  try {
+    body = await request('/api/plugin/route-autoprobe/snapshot', { method: 'GET' }, undefined, 20_000)
+  }
+  catch {
+    // 插件未安装或未启用，交回原有的主题存储路径。
+    return null
+  }
+  const data = (body.data && typeof body.data === 'object' ? body.data : null) as Record<string, unknown> | null
+  if (!data || !data.nodes || typeof data.nodes !== 'object')
+    return null
+  const map = parseRouteProbeMap(data.nodes)
+  return Object.keys(map).length ? map : null
+}

@@ -1,3 +1,10 @@
+## 1.1.9 — Plugin-first route probe
+
+- Add `fetchPluginRouteProbeResults()`: read `/api/plugin/route-autoprobe/snapshot` and merge each node's carriers into the display map, so server-side cron results reach the card without a signed-in browser.
+- `useNodeRouteProbe` now short-circuits to a 5-minute snapshot poll when the plugin answers, and never starts the browser-side collector or stagger timer in that case; the two collectors no longer compete.
+- Fall back unchanged to the original browser collector when the plugin is absent, disabled or returns an empty map, so the card never renders blank.
+- Display-only integration: no classifier, prefix-table, merge or persistence-format changes; stored `pandaOpsRouteProbeResults` is left untouched while the plugin is authoritative.
+
 ## 1.1.8 — Auto-install traceroute by default
 
 - Default `routeProbeAutoInstall` to `true` so a freshly added node gets `traceroute` installed and its three-carrier return route measured without any manual step.
